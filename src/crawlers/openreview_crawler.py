@@ -64,8 +64,13 @@ class OpenReviewCrawler(BaseCrawler):
         if conference not in self.supported_conferences:
             raise ValueError(f"不支持的会议: {conference}")
         
+        # 对于2025年的ICLR，使用特殊的URL格式
+        if conference == 'ICLR' and year == 2025:
+            # 2025年可能使用不同的URL格式或还在review阶段
+            return 'https://openreview.net/group?id=ICLR.cc/2025/Conference#tab-active-submissions'
+        
         if year not in self.supported_years:
-            raise ValueError(f"不支持的年份: {year}")
+            logger.warning(f"年份 {year} 可能不受支持，但仍尝试访问")
         
         return self.url_templates[conference].format(year=year)
     
@@ -209,29 +214,73 @@ class OpenReviewCrawler(BaseCrawler):
             List[str]: 分类标签列表 Category tabs list
         """
         try:
-            # 查找分类标签
-            tab_elements = self.driver.find_elements(
-                By.CSS_SELECTOR, 
-                ".nav-tabs li[role='presentation'] a"
+            # 等待页面加载完成
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
             
+            # 查找分类标签 - 尝试多种选择器
+            tab_selectors = [
+                ".nav-tabs li[role='presentation'] a",
+                ".nav-tabs li a",
+                ".nav.nav-tabs li a",
+                "#notes .nav-tabs li a"
+            ]
+            
+            tab_elements = []
+            for selector in tab_selectors:
+                try:
+                    tab_elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    if tab_elements:
+                        logger.debug(f"使用选择器找到标签: {selector}")
+                        break
+                except:
+                    continue
+            
             categories = []
-            for tab in tab_elements:
-                category_id = tab.get_attribute("aria-controls")
-                category_text = tab.text.strip().lower()
-                
-                # 只获取相关的分类 (接收的论文)
-                if any(keyword in category_text for keyword in [
-                    "accept", "poster", "oral", "spotlight", "notable", "decision"
-                ]):
-                    categories.append(category_id)
+            
+            # 如果找到了标签
+            if tab_elements:
+                for tab in tab_elements:
+                    try:
+                        category_id = tab.get_attribute("aria-controls")
+                        category_text = tab.text.strip().lower()
+                        
+                        # 对于2025年，可能包含不同的分类
+                        if year == 2025:
+                            # 2025年可能是提交阶段，查找active submissions
+                            if any(keyword in category_text for keyword in [
+                                "active", "submission", "under review", "decision", "accept", "poster", "oral"
+                            ]):
+                                if category_id:
+                                    categories.append(category_id)
+                        else:
+                            # 常规年份的分类
+                            if any(keyword in category_text for keyword in [
+                                "accept", "poster", "oral", "spotlight", "notable", "decision"
+                            ]):
+                                if category_id:
+                                    categories.append(category_id)
+                    except Exception as e:
+                        logger.debug(f"处理标签失败: {e}")
+                        continue
+            
+            # 如果没有找到标签，使用默认分类
+            if not categories:
+                if year == 2025:
+                    categories = ["active-submissions"]  # 2025年可能还在review阶段
+                else:
+                    categories = ["accepted-papers", "poster-presentations", "oral-presentations"]
             
             logger.info(f"找到 {len(categories)} 个论文分类: {categories}")
             return categories
             
         except Exception as e:
             logger.error(f"获取论文分类失败: {e}")
-            return []
+            # 返回默认分类
+            if year == 2025:
+                return ["active-submissions"]
+            return ["accepted-papers"]
     
     def crawl_papers_by_category(self, 
                                 category_id: str, 
@@ -256,12 +305,18 @@ class OpenReviewCrawler(BaseCrawler):
         papers = []
         
         try:
-            # 点击分类标签
-            category_tab = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, f"a[aria-controls='{category_id}']"))
-            )
-            self.driver.execute_script("arguments[0].click();", category_tab)
-            time.sleep(2)
+            # 尝试点击分类标签
+            try:
+                category_tab = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, f"a[aria-controls='{category_id}']"))
+                )
+                self.driver.execute_script("arguments[0].click();", category_tab)
+                time.sleep(2)
+                logger.info(f"成功点击分类标签: {category_id}")
+            except TimeoutException:
+                # 如果找不到标签，可能页面已经显示了内容
+                logger.warning(f"未找到分类标签 {category_id}，尝试直接查找内容")
+                pass
             
             # 分页爬取
             current_page = 1
@@ -280,20 +335,47 @@ class OpenReviewCrawler(BaseCrawler):
                     paper_selectors = [
                         f"#{category_id} .list-unstyled.list-paginated h4",
                         f"#{category_id} li.note",
-                        f"#{category_id} .note-content"
+                        f"#{category_id} .note-content",
+                        ".note-content h4",  # 通用选择器
+                        "li.note",  # 更通用的选择器
+                        ".list-unstyled li",  # 列表项
+                        "h4 a[href*='/forum?id=']"  # 论文标题链接
                     ]
                     
                     paper_elements = []
+                    used_selector = None
+                    
                     for selector in paper_selectors:
                         try:
                             paper_elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
                             if paper_elements:
+                                used_selector = selector
+                                logger.debug(f"使用选择器找到论文: {selector}, 数量: {len(paper_elements)}")
                                 break
                         except NoSuchElementException:
                             continue
                     
                     if not paper_elements:
                         logger.warning(f"未找到论文元素: {category_id} 第 {current_page} 页")
+                        
+                        # 尝试查看页面源码以调试
+                        page_source = self.driver.page_source
+                        if "under review" in page_source.lower() or "submissions" in page_source.lower():
+                            logger.info("检测到页面包含'under review'或'submissions'，可能论文还在审核中")
+                        
+                        # 尝试查找任何包含论文信息的元素
+                        debug_elements = self.driver.find_elements(By.CSS_SELECTOR, "h4, .title, [class*='title'], [class*='paper']")
+                        logger.debug(f"调试: 找到 {len(debug_elements)} 个可能的标题元素")
+                        
+                        if debug_elements:
+                            for i, elem in enumerate(debug_elements[:5]):  # 只显示前5个
+                                try:
+                                    text = elem.text.strip()
+                                    if text and len(text) > 10:  # 过滤掉太短的文本
+                                        logger.debug(f"调试元素 {i}: {text[:100]}...")
+                                except:
+                                    pass
+                        
                         break
                     
                     # 提取每篇论文的信息
