@@ -23,6 +23,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.core.database import DatabaseManager
 from src.crawlers.openreview_crawler import OpenReviewCrawler
+from src.crawlers.robust_openreview_crawler import RobustOpenReviewCrawler
 from src.crawlers.cvf_crawler import CVFCrawler, ECCVCrawler
 from src.scoring.investment_scorer import InvestmentScorer
 from src.export.excel_exporter import ExcelExporter
@@ -58,9 +59,10 @@ class PaperMonitoringSystem:
         self.scorer = InvestmentScorer(self.config)
         self.exporter = ExcelExporter(self.config)
         
-        # 初始化爬虫
+        # 初始化爬虫 - 使用更稳定的版本
         self.crawlers = {
-            'openreview': OpenReviewCrawler(self.config['crawler']),
+            'openreview': RobustOpenReviewCrawler(self.config['crawler']),  # 使用增强版
+            'openreview_legacy': OpenReviewCrawler(self.config['crawler']),  # 保留原版作为备用
             'cvf': CVFCrawler(self.config['crawler']),
             'eccv': ECCVCrawler(self.config['crawler'])
         }

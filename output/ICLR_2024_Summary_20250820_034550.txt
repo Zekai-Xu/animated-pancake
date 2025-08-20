@@ -1,0 +1,55 @@
+AI学术论文投资价值分析报告
+==================================================
+
+📊 整体统计
+--------------------
+论文总数: 7
+高价值论文 (≥8.0): 7
+高价值比例: 100.0%
+平均投资评分: 8.66
+
+🌟 投资价值最高的论文 (TOP 5)
+------------------------------
+1. Mamba: Linear-Time Sequence Modeling with Selective State Spaces
+   评分: 9.5 | 建议: 强烈推荐
+   作者: Albert Gu, Tri Dao
+   链接: https://openreview.net/forum?id=AL1fq05o7H
+
+2. Direct Preference Optimization: Your Language Model is Secretly a Reward Model
+   评分: 8.9 | 建议: 强烈推荐
+   作者: Rafael Rafailov, Archit Sharma, Eric Mitchell
+   链接: https://openreview.net/forum?id=HPuSIXJaa9
+
+3. Mixture of Experts Meets Instruction Tuning
+   评分: 8.8 | 建议: 强烈推荐
+   作者: Sheng Shen, Chunyuan Li, Xiaowei Hu
+   链接: https://openreview.net/forum?id=5HCnKDeTws
+
+4. Self-Rewarding Language Models
+   评分: 8.7 | 建议: 强烈推荐
+   作者: Weizhe Yuan, Richard Yuanzhe Pang, Kyunghyun Cho
+   链接: https://openreview.net/forum?id=uccHPGDlao
+
+5. Training Diffusion Models with Reinforcement Learning
+   评分: 8.5 | 建议: 强烈推荐
+   作者: Kevin Black, Michael Janner, Yilun Du, Ilya Kostrikov, Sergey Levine
+   链接: https://openreview.net/forum?id=YCWjhGrJbD
+
+📈 技术趋势分析
+--------------------
+热门技术关键词:
+  • state space models: 2 篇论文
+  • large language models: 2 篇论文
+  • reinforcement learning: 2 篇论文
+  • rlhf: 2 篇论文
+  • mamba: 1 篇论文
+  • transformer alternative: 1 篇论文
+  • linear time: 1 篇论文
+  • mixture of experts: 1 篇论文
+  • instruction tuning: 1 篇论文
+  • moe: 1 篇论文
+
+💼 投资建议汇总
+--------------------
+  • 强烈推荐: 5 篇论文
+  • 推荐关注: 2 篇论文
