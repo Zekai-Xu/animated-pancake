@@ -1,0 +1,161 @@
+# AI Academic Paper Monitoring System Configuration
+# 专业的AI学术论文监控系统配置文件
+
+# 数据库配置
+database:
+  type: "sqlite"
+  path: "data/papers.db"
+  backup_enabled: true
+  backup_interval_days: 7
+
+# 爬虫配置
+crawler:
+  # 代理设置 (如需要)
+  proxy:
+    enabled: false
+    http: "http://127.0.0.1:7890"
+    https: "http://127.0.0.1:7890"
+  
+  # 请求设置
+  request:
+    timeout: 30
+    max_retries: 5
+    retry_delay: 10
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  
+  # Chrome driver设置
+  chrome:
+    headless: true
+    disable_gpu: true
+    no_sandbox: true
+    window_size: "1920,1080"
+
+# 支持的学术会议
+conferences:
+  computer_vision:
+    - name: "CVPR"
+      years: [2020, 2021, 2022, 2023, 2024]
+      url_template: "https://openaccess.thecvf.com/{conference}{year}?day=all"
+      type: "cvf"
+    - name: "ICCV" 
+      years: [2019, 2021, 2023]
+      url_template: "https://openaccess.thecvf.com/{conference}{year}?day=all"
+      type: "cvf"
+    - name: "ECCV"
+      years: [2020, 2022, 2024]
+      url_template: "https://www.ecva.net/papers.php"
+      type: "eccv"
+    - name: "WACV"
+      years: [2020, 2021, 2022, 2023, 2024]
+      url_template: "https://openaccess.thecvf.com/{conference}{year}"
+      type: "cvf"
+  
+  machine_learning:
+    - name: "ICLR"
+      years: [2020, 2021, 2022, 2023, 2024, 2025]
+      url_template: "https://openreview.net/group?id=ICLR.cc/{year}/Conference"
+      type: "openreview"
+    - name: "ICML"
+      years: [2020, 2021, 2022, 2023, 2024]
+      url_template: "https://openreview.net/group?id=ICML.cc/{year}/Conference"
+      type: "openreview"
+    - name: "NeurIPS"
+      years: [2020, 2021, 2022, 2023, 2024]
+      url_template: "https://openreview.net/group?id=NeurIPS.cc/{year}/Conference"
+      type: "openreview"
+  
+  ai_general:
+    - name: "AAAI"
+      years: [2020, 2021, 2022, 2023, 2024]
+      url_template: "https://aaai.org/aaai-conference/aaai-{year}-accepted-papers/"
+      type: "aaai"
+    - name: "IJCAI"
+      years: [2020, 2021, 2022, 2023, 2024]
+      url_template: "https://www.ijcai.org/proceedings/{year}/"
+      type: "ijcai"
+
+# 评分系统配置
+scoring:
+  # 权重配置 (总和应为1.0)
+  weights:
+    citation_count: 0.25      # 引用次数
+    citation_growth: 0.20     # 引用增长率
+    author_h_index: 0.15      # 作者H指数
+    venue_impact: 0.15        # 会议影响因子
+    novelty_score: 0.10       # 新颖性分数
+    technical_depth: 0.10     # 技术深度
+    commercial_potential: 0.05 # 商业化潜力
+  
+  # 阈值设置
+  thresholds:
+    min_citation_count: 5
+    min_h_index: 10
+    min_venue_rank: 0.7
+    investment_score_threshold: 7.0
+
+# 投资相关关键词
+investment_keywords:
+  hot_topics:
+    - "Large Language Model"
+    - "LLM"
+    - "Generative AI" 
+    - "Diffusion Model"
+    - "Multimodal"
+    - "Foundation Model"
+    - "Agent"
+    - "Retrieval Augmented Generation"
+    - "RAG"
+    - "Computer Vision"
+    - "Autonomous Driving"
+    - "Robotics"
+    - "Edge Computing"
+    - "Federated Learning"
+    - "Quantum Machine Learning"
+  
+  commercial_indicators:
+    - "Industry"
+    - "Production"
+    - "Scale"
+    - "Deployment" 
+    - "Real-world"
+    - "Application"
+    - "Commercial"
+    - "Startup"
+
+# 数据导出配置
+export:
+  excel:
+    filename_template: "AI_Papers_Analysis_{date}.xlsx"
+    sheets:
+      - name: "论文概览"
+        columns: ["标题", "作者", "会议", "年份", "投资分数", "引用数", "关键词匹配"]
+      - name: "投资机会"
+        columns: ["标题", "作者信息", "机构", "联系方式", "商业潜力", "技术成熟度", "投资建议"]
+      - name: "趋势分析" 
+        columns: ["技术领域", "论文数量", "平均分数", "增长趋势", "投资热度"]
+    
+    formatting:
+      header_color: "366092"
+      highlight_color: "FFE699" 
+      font_name: "Calibri"
+      font_size: 11
+
+# 邮件通知配置 (可选)
+notifications:
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    sender_email: ""
+    sender_password: ""
+    recipients: []
+  
+  report_frequency: "weekly"  # daily, weekly, monthly
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/paper_monitor.log"
+  max_size_mb: 10
+  backup_count: 5
